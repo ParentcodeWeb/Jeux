@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Manager - Notifications</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+        body { font-family: 'Outfit', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); }
+        .btn-active:active { transform: scale(0.96); }
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            border-radius: 99px;
+            width: 20px;
+            height: 20px;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            border: 2px solid white;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 pb-10">
+
+    <!-- HEADER NAVIGATION -->
+    <nav id="nav-header" class="fixed top-0 left-0 w-full p-4 flex justify-between items-center z-50 hidden">
+        <button onclick="showScreen('home')" class="glass p-3 rounded-2xl shadow-sm btn-active">
+            <i data-lucide="home" class="w-6 h-6 text-slate-600"></i>
+        </button>
+        <div class="flex gap-2">
+            <!-- Badge Notification Parent (visible seulement sur l'accueil ou mode parent) -->
+            <div id="notif-indicator" class="relative hidden">
+                <div class="glass p-3 rounded-2xl shadow-sm">
+                    <i data-lucide="bell" class="w-6 h-6 text-indigo-500"></i>
+                </div>
+                <span id="notif-count" class="notification-badge">0</span>
+            </div>
+            
+            <div class="glass px-5 py-2 rounded-2xl shadow-sm flex items-center">
+                <i data-lucide="coins" class="w-5 h-5 text-amber-500 mr-2"></i>
+                <span id="display-coins" class="text-xl font-black text-slate-800">0</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ECRAN ACCUEIL -->
+    <div id="screen-home" class="min-h-screen flex flex-col items-center justify-center p-6 space-y-8 fade-in">
+        <div class="text-center">
+            <div class="w-20 h-20 bg-indigo-600 text-white rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-200">
+                <i data-lucide="sparkles" class="w-10 h-10"></i>
+            </div>
+            <h1 class="text-4xl font-black text-slate-900">Family Manager</h1>
+            <p class="text-slate-400 font-medium italic">Sauvegarde Locale Active</p>
+        </div>
+        
+        <div class="w-full max-w-xs space-y-4">
+            <button onclick="showScreen('parent')" class="relative w-full bg-slate-900 text-white p-6 rounded-3xl flex items-center justify-center font-bold text-xl shadow-lg btn-active">
+                <i data-lucide="lock" class="mr-3"></i> Parent
+                <span id="notif-home-badge" class="notification-badge hidden">0</span>
+            </button>
+            <button onclick="showScreen('enfant')" class="w-full bg-emerald-500 text-white p-6 rounded-3xl flex items-center justify-center font-bold text-xl shadow-lg btn-active">
+                <i data-lucide="smile" class="mr-3"></i> Enfant
+            </button>
+        </div>
+    </div>
+
+    <!-- ECRAN PARENT -->
+    <div id="screen-parent" class="hidden pt-24 px-6 max-w-5xl mx-auto space-y-8 fade-in">
+        
+        <!-- SECTION NOTIFICATIONS -->
+        <div id="section-notifications" class="bg-indigo-50 p-6 rounded-[2.5rem] border-2 border-indigo-100">
+            <h3 class="font-black text-indigo-900 mb-4 flex items-center">
+                <i data-lucide="bell-ring" class="mr-2 w-5 h-5"></i> 
+                Récompenses à donner (<span id="notif-title-count">0</span>)
+            </h3>
+            <div id="parent-notifications-list" class="grid sm:grid-cols-2 gap-3">
+                <!-- Les achats de l'enfant apparaissent ici -->
+            </div>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold mb-4 flex items-center text-slate-600"><i data-lucide="coins" class="mr-2 text-amber-500"></i> Solde Global</h3>
+                    <div class="text-3xl font-black mb-4"><span id="parent-coins-view">0</span> pts</div>
+                    <button onclick="adjustCoinsPrompt()" class="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-bold text-sm btn-active flex items-center justify-center">
+                        <i data-lucide="edit-3" class="w-4 h-4 mr-2"></i> Ajuster manuellement
+                    </button>
+                </div>
+
+                <!-- Ajouter Jeu -->
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold mb-4 flex items-center"><i data-lucide="plus" class="mr-2 text-indigo-500"></i> Ajouter un jeu</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="input-game" class="w-full bg-slate-50 p-3 rounded-xl outline-none border text-sm" placeholder="Nom de l'activité">
+                        <button onclick="addGame()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold btn-active">Ajouter le jeu</button>
+                    </div>
+                </div>
+
+                <!-- Ajouter Cadeau -->
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold mb-4 flex items-center"><i data-lucide="gift" class="mr-2 text-rose-500"></i> Boutique</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="input-reward-name" class="w-full bg-slate-50 p-3 rounded-xl outline-none border text-sm" placeholder="Nom du cadeau">
+                        <input type="number" id="input-reward-price" class="w-full bg-slate-50 p-3 rounded-xl outline-none border text-sm" placeholder="Prix (pts)">
+                        <button onclick="addReward()" class="w-full bg-rose-500 text-white py-3 rounded-xl font-bold btn-active">Créer la récompense</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-8">
+                <div>
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Jeux paramétrés</h4>
+                    <div id="parent-games-list" class="grid sm:grid-cols-2 gap-3"></div>
+                </div>
+                <div>
+                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Catalogue Boutique</h4>
+                    <div id="parent-rewards-list" class="grid sm:grid-cols-2 gap-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ECRAN ENFANT -->
+    <div id="screen-enfant" class="hidden pt-24 px-6 max-w-4xl mx-auto space-y-10 fade-in">
+        <section>
+            <h3 class="text-xl font-black mb-4 flex items-center"><i data-lucide="play-circle" class="mr-2 text-emerald-500"></i> Tes Activités</h3>
+            <div id="enfant-games-list" class="grid grid-cols-2 sm:grid-cols-3 gap-4"></div>
+        </section>
+
+        <section>
+            <h3 class="text-xl font-black mb-4 flex items-center"><i data-lucide="shopping-bag" class="mr-2 text-amber-500"></i> Boutique Cadeaux</h3>
+            <div id="enfant-rewards-list" class="grid grid-cols-2 sm:grid-cols-3 gap-4"></div>
+        </section>
+    </div>
+
+    <!-- MODALE MISE (BET) -->
+    <div id="modal-bet" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl fade-in">
+            <h2 class="text-2xl font-black mb-2" id="bet-game-title">Jeu</h2>
+            <p class="text-slate-400 text-sm mb-6">Combien de points veux-tu miser ?</p>
+            <input type="number" id="bet-amount" class="w-full text-center text-5xl font-black p-4 bg-emerald-50 text-emerald-600 rounded-3xl mb-8 outline-none border-4 border-transparent focus:border-emerald-200" placeholder="0">
+            <button onclick="confirmBet()" class="w-full bg-emerald-500 text-white py-5 rounded-3xl font-bold text-xl shadow-lg btn-active">C'est parti !</button>
+            <button onclick="closeModal('modal-bet')" class="mt-4 text-slate-400 font-bold">Annuler</button>
+        </div>
+    </div>
+
+    <!-- ECRAN PARTIE EN COURS -->
+    <div id="screen-playing" class="hidden fixed inset-0 bg-white z-[150] flex flex-col items-center justify-center p-8 text-center">
+        <div class="relative mb-12">
+            <div class="w-32 h-32 border-8 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center text-indigo-600">
+                <i data-lucide="gamepad-2" class="w-12 h-12"></i>
+            </div>
+        </div>
+        <h2 class="text-4xl font-black mb-4">Partie en cours...</h2>
+        <button onclick="showResultsMenu()" class="bg-slate-900 text-white px-10 py-6 rounded-full font-black text-2xl shadow-2xl btn-active uppercase">Partie finie !</button>
+    </div>
+
+    <!-- MENU RESULTATS -->
+    <div id="modal-results" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[200] flex items-center justify-center p-6">
+        <div class="bg-white rounded-[3rem] p-10 max-w-md w-full text-center shadow-2xl fade-in">
+            <h2 class="text-3xl font-black mb-8">Alors ?</h2>
+            <div class="grid gap-4">
+                <button onclick="processGameResult('gagné')" class="bg-emerald-500 text-white py-5 rounded-2xl font-black text-xl flex items-center justify-center btn-active">
+                    <i data-lucide="trophy" class="mr-3"></i> GAGNÉ
+                </button>
+                <button onclick="processGameResult('égalité')" class="bg-blue-500 text-white py-5 rounded-2xl font-black text-xl flex items-center justify-center btn-active">
+                    <i data-lucide="hand-metal" class="mr-3"></i> ÉGALITÉ
+                </button>
+                <button onclick="processGameResult('perdu')" class="bg-rose-500 text-white py-5 rounded-2xl font-black text-xl flex items-center justify-center btn-active">
+                    <i data-lucide="frown" class="mr-3"></i> PERDU
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECAP FINAL -->
+    <div id="modal-recap" class="hidden fixed inset-0 bg-slate-900/90 backdrop-blur-sm z-[300] flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] p-8 max-w-sm w-full text-center shadow-2xl fade-in">
+            <h2 class="text-2xl font-black mb-2">Bravo !</h2>
+            <p class="text-slate-500 text-sm mb-6">Mise récupérée : <span id="recap-bet" class="font-bold text-slate-800">0</span> pts.</p>
+            <div class="bg-slate-50 p-6 rounded-3xl mb-6">
+                <label class="block text-xs font-black text-slate-400 uppercase mb-2">Bonus Parents (facultatif)</label>
+                <input type="number" id="bonus-amount" class="w-full text-center text-4xl font-black bg-transparent outline-none text-indigo-600" placeholder="0">
+            </div>
+            <button onclick="finalizeGame()" class="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black text-xl btn-active shadow-lg">Encaisser</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DONNÉES ---
+        let data = {
+            coins: 10,
+            games: [{id: 1, name: 'Devoirs'}, {id: 2, name: 'Rangement'}],
+            rewards: [{id: 1, name: '30 min de console', price: 10}],
+            pendingRewards: [] // Les achats de l'enfant qui attendent validation
+        };
+
+        let currentBet = 0;
+
+        function loadData() {
+            const saved = localStorage.getItem('family_manager_pro_v2');
+            if (saved) data = JSON.parse(saved);
+            updateGlobalUI();
+        }
+
+        function saveData() {
+            localStorage.setItem('family_manager_pro_v2', JSON.stringify(data));
+            updateGlobalUI();
+        }
+
+        // --- NAVIGATION ---
+        function showScreen(name) {
+            document.getElementById('screen-home').classList.add('hidden');
+            document.getElementById('screen-parent').classList.add('hidden');
+            document.getElementById('screen-enfant').classList.add('hidden');
+            document.getElementById('nav-header').classList.toggle('hidden', name === 'home');
+            document.getElementById('screen-' + name).classList.remove('hidden');
+            
+            // Notification badge visible uniquement en dehors de l'écran enfant pour ne pas le déranger
+            document.getElementById('notif-indicator').classList.toggle('hidden', name === 'enfant');
+            
+            renderLists();
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // --- LOGIQUE PARENT ---
+        function addGame() {
+            const input = document.getElementById('input-game');
+            if (!input.value) return;
+            data.games.push({ id: Date.now(), name: input.value });
+            input.value = '';
+            saveData();
+            renderLists();
+        }
+
+        function deleteGame(id) {
+            data.games = data.games.filter(g => g.id !== id);
+            saveData();
+            renderLists();
+        }
+
+        function addReward() {
+            const name = document.getElementById('input-reward-name');
+            const price = document.getElementById('input-reward-price');
+            if (!name.value || !price.value) return;
+            data.rewards.push({ id: Date.now(), name: name.value, price: parseInt(price.value) });
+            name.value = ''; price.value = '';
+            saveData();
+            renderLists();
+        }
+
+        function deleteReward(id) {
+            data.rewards = data.rewards.filter(r => r.id !== id);
+            saveData();
+            renderLists();
+        }
+
+        function adjustCoinsPrompt() {
+            const val = prompt("Modifier les points :", "0");
+            if (val !== null) {
+                data.coins += parseInt(val) || 0;
+                saveData();
+                renderLists();
+            }
+        }
+
+        // Valider qu'une récompense a été donnée
+        function validateRewardDelivery(purchaseId) {
+            data.pendingRewards = data.pendingRewards.filter(p => p.purchaseId !== purchaseId);
+            saveData();
+            renderLists();
+        }
+
+        // --- LOGIQUE ENFANT ---
+        function openBet(id, name) {
+            document.getElementById('bet-game-title').innerText = name;
+            document.getElementById('bet-amount').value = '';
+            document.getElementById('modal-bet').classList.remove('hidden');
+        }
+
+        function confirmBet() {
+            const amount = parseInt(document.getElementById('bet-amount').value) || 0;
+            if (amount < 0 || amount > data.coins) {
+                alert("Mise invalide ou solde insuffisant !");
+                return;
+            }
+            currentBet = amount;
+            data.coins -= currentBet;
+            saveData();
+            closeModal('modal-bet');
+            document.getElementById('screen-playing').classList.remove('hidden');
+        }
+
+        function showResultsMenu() { document.getElementById('modal-results').classList.remove('hidden'); }
+
+        function processGameResult(res) {
+            closeModal('modal-results');
+            document.getElementById('screen-playing').classList.add('hidden');
+            if (res === 'perdu') {
+                alert("Perdu ! La mise est retirée.");
+                showScreen('enfant');
+            } else {
+                document.getElementById('recap-bet').innerText = currentBet;
+                document.getElementById('bonus-amount').value = '';
+                document.getElementById('modal-recap').classList.remove('hidden');
+            }
+        }
+
+        function finalizeGame() {
+            const bonus = parseInt(document.getElementById('bonus-amount').value) || 0;
+            data.coins += (currentBet + bonus);
+            saveData();
+            closeModal('modal-recap');
+            showScreen('enfant');
+        }
+
+        function buyReward(id) {
+            const reward = data.rewards.find(r => r.id === id);
+            if (!reward || data.coins < reward.price) return;
+            
+            if (confirm(`Acheter "${reward.name}" pour ${reward.price} pts ?`)) {
+                data.coins -= reward.price;
+                // On ajoute à la liste des notifications parent
+                data.pendingRewards.push({
+                    purchaseId: Date.now() + Math.random(),
+                    name: reward.name,
+                    date: new Date().toLocaleTimeString()
+                });
+                saveData();
+                alert("Achat réussi ! Demande au parent de valider.");
+            }
+        }
+
+        // --- RENDU UI ---
+        function updateGlobalUI() {
+            const count = data.pendingRewards.length;
+            document.getElementById('display-coins').innerText = data.coins;
+            document.getElementById('parent-coins-view').innerText = data.coins;
+            
+            document.getElementById('notif-count').innerText = count;
+            document.getElementById('notif-home-badge').innerText = count;
+            document.getElementById('notif-title-count').innerText = count;
+            
+            document.getElementById('notif-indicator').classList.toggle('hidden', count === 0);
+            document.getElementById('notif-home-badge').classList.toggle('hidden', count === 0);
+            
+            // Masquer la section si pas de notifs en mode parent
+            document.getElementById('section-notifications').classList.toggle('hidden', count === 0);
+        }
+
+        function renderLists() {
+            // Parent Games
+            document.getElementById('parent-games-list').innerHTML = data.games.map(g => `
+                <div class="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                    <span class="font-bold text-slate-700">${g.name}</span>
+                    <button onclick="deleteGame(${g.id})" class="text-slate-300 hover:text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            `).join('');
+
+            // Parent Rewards
+            document.getElementById('parent-rewards-list').innerHTML = data.rewards.map(r => `
+                <div class="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-700">${r.name}</span>
+                        <span class="text-xs font-black text-rose-500">${r.price} pts</span>
+                    </div>
+                    <button onclick="deleteReward(${r.id})" class="text-slate-300 hover:text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </div>
+            `).join('');
+
+            // Parent Notifications (Attente de distribution)
+            document.getElementById('parent-notifications-list').innerHTML = data.pendingRewards.map(p => `
+                <div class="bg-white p-4 rounded-2xl flex items-center justify-between shadow-sm border border-indigo-200">
+                    <div>
+                        <p class="font-black text-indigo-900">${p.name}</p>
+                        <p class="text-[10px] text-indigo-400 font-bold uppercase">Acheté à ${p.date}</p>
+                    </div>
+                    <button onclick="validateRewardDelivery(${p.purchaseId})" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-black btn-active">
+                        DONNÉ !
+                    </button>
+                </div>
+            `).join('');
+
+            // Enfant Games
+            document.getElementById('enfant-games-list').innerHTML = data.games.map(g => `
+                <button onclick="openBet(${g.id}, '${g.name.replace(/'/g, "\\'")}')" class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center space-y-3 btn-active h-36">
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center"><i data-lucide="star"></i></div>
+                    <span class="font-bold text-xs text-center line-clamp-2">${g.name}</span>
+                </button>
+            `).join('');
+
+            // Enfant Rewards
+            document.getElementById('enfant-rewards-list').innerHTML = data.rewards.map(r => `
+                <button onclick="buyReward(${r.id})" class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center space-y-2 btn-active h-36">
+                    <div class="w-10 h-10 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mb-1"><i data-lucide="gift" class="w-5 h-5"></i></div>
+                    <span class="font-bold text-xs text-center truncate w-full">${r.name}</span>
+                    <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-[10px] font-black">${r.price} pts</span>
+                </button>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
